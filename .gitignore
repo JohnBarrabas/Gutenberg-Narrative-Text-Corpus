@@ -8,3 +8,9 @@
 bin/hp
 bin/pe
 bin/we
+#
+# Files created by the process
+#
+www.gutenberg.org*
+ISO
+pgdvd072006.iso
