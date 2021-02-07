@@ -1,0 +1,9 @@
+#
+# A list all the non-narrative Books that can't be readily detected using other means.
+#   For example, dictionaries.
+#
+# Text after pound sign are comments. List only the ETextNo (ie - the Gutenberg book number)
+#   but you can also append a comment if you like.
+#
+12864               # Dictionary
+14358               # Mostly riddles

@@ -20,7 +20,6 @@
 ##      ->{Title}                   Title
 ##      ->{Author}                  Author
 ##      ->{Lang}                    Language (ex: "English")
-##      ->{Olde}                    TRUE if text appears to be Olde English
 ##      ->{Files}->                 List of files comprising book
 ##          {$Filename}->               Filename of file
 ##              {File}                      Filename of file
@@ -45,7 +44,7 @@
 ##      ->UnloadText()              Free up local storage holding file contents
 ##
 ##      ->ParseEncoding()           Parse text, return encoding
-##      ->ProcessText($File)        Process text for AI purposes
+##      ->RemoveGutenberg($File)    Remove gutenberg header/footer from text
 ##
 ##      ->PrintHeader()             Print out header info plus files and unfit info
 ##      ->PrintDesc  ()             Print out header info
@@ -60,6 +59,9 @@
 ##      ->EOL($Index)               Return index of EOL                     in text starting at $Index
 ##      ->NextBlankLine($Index)     Return index of next blank line         in text starting at $Index
 ##      ->TrimBlankLines()          Remove blank lines at start/end of text
+##
+##      ->IsOlde()                  Return TRUE if text satisfies conditions for Olde English
+##      ->IsASCII($File)            Return TRUE if file encoding is some form of ASCII
 ##
 ##  ISA
 ##
@@ -174,7 +176,6 @@ sub new {
                        Unfit   => "",
                        Tag     => "",
                        Text    => "",
-                       Olde    => 0,
                        }, $class;
 
     $self->AssertDiv(ref($self->{ETextNo}) eq "" ,"ETextNo is not scalar");
@@ -261,6 +262,11 @@ sub LoadText {
         $self->{Files}{$File}{    Size} = length($Text);
         $self->{Files}{$File}{Encoding} = $self->ParseEncoding();
 
+        if( $self->IsASCII($File) ) {
+            $self->{Lang} = "OldeEnglish"
+                if $self->IsOlde();
+            }
+
         return 1;
         }
 
@@ -298,6 +304,11 @@ sub LoadText {
         $self->{Text} = $Text;
         $self->{Files}{$File}{    Size} = length($Text);
         $self->{Files}{$File}{Encoding} = $self->ParseEncoding();
+
+        if( $self->IsASCII($File) ) {
+            $self->{Lang} = "OldeEnglish"
+                if $self->IsOlde();
+            }
 
         unlink(<"$TmpDir/*">);
         return 1;
@@ -368,14 +379,17 @@ sub UnloadText { my $self = shift; undef $self->{Text}; }
 ########################################################################################################################
 ########################################################################################################################
 #
-# ProcessText - Massage the text before saving to file
+# RemoveGutenberg - Remove the Gutenberg header and footer from the file
 #
 # Inputs:   None - Local text object is processed.
 #
 # Outputs:  TRUE  if processed text seems OK for AI purposes
 #           FALSE otherwise (and Defect is set)
 #
-sub ProcessText {
+# Notes: Additionally, the text body is checked for compliance with an ASCII encoding, and minimum length.
+#          Any failures note the book as "Unfit".
+#
+sub RemoveGutenberg {
     my $self = shift;
 
     my @Guts;
@@ -420,7 +434,7 @@ sub ProcessText {
 
     if( length($self->{Text}) < 10000 ) {
         $self->{Unfit} = "Text between header/footer too short";
-print "Too short: $self->{ETextNo} (length=" . (length($self->{Text})) . ")\n";
+#print "Too short: $self->{ETextNo} (length=" . (length($self->{Text})) . ")\n";
         return 0;
         }
 
@@ -428,11 +442,9 @@ print "Too short: $self->{ETextNo} (length=" . (length($self->{Text})) . ")\n";
         $self->{Unfit} = "Non-ASCII characters detected";
 
         my ($Char) = $self->{Text} !~ m/[\x00-\x7f]/;
-print "Non Ascii: $self->{ETextNo} " . sprintf("0x%x",ord($Char)) . "\n";
+#print "Non Ascii: $self->{ETextNo} " . sprintf("0x%x",ord($Char)) . "\n";
         return 0;
         }
-
-    $self->{Olde} = $self->IsOlde();
 
     return 1;
     }
@@ -686,15 +698,14 @@ sub TrimBlankLines {
 # Outputs:  TRUE  if text appears to be Olde English
 #           FALSE otherwise
 #
-# NOTES:
-#
-# The string "selfe" seems to be a good indicator of Olde English (selfe, himselfe, myselfe, &c). There are
-#   no words that contain "selfe" followed by more chars in the corpus.
-#
 sub IsOlde {
     my $self = shift;
 
-    my $SelfeCount = ($self->{Text} =~ /selfe/g);
+    #
+    # The string "selfe" seems to be a good indicator of Olde English (selfe, himselfe, myselfe, &c). There are
+    #   no words that contain "selfe" followed by more chars in the corpus.
+    #
+    my $SelfeCount = () = ($self->{Text} =~ /selfe/g);
 
     return 1
         if $SelfeCount > 3;
@@ -702,6 +713,39 @@ sub IsOlde {
     return 0;
     }
 
+
+########################################################################################################################
+########################################################################################################################
+#
+# IsASCII - Return TRUE if encoding is some form of ASCII
+#
+# Inputs:   Book to check
+#           File of book to check
+#
+# Outputs:  TRUE  if encoding is ASCII
+#           FALSE otherwise
+#
+sub IsASCII {
+    my $self = shift;
+    my $File = shift;
+
+    my $Encoding = $self->{Files}{$File}{Encoding};
+
+    die "No encoding for $self->{ETextNo}.$File"
+        unless defined $Encoding and length $Encoding;
+
+    return 1
+        if $Encoding eq "ASCII";
+
+    return 1
+        if substr($Encoding,0,10) eq "ISO-646-US";
+
+    return 1
+        if substr($Encoding,0,10) eq "US-ASCII";
+
+    return 1
+        if substr($Encoding,0,10) eq "US-ASCII<p>";
+    }
 
 
 

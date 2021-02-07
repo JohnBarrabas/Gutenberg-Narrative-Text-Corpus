@@ -32,11 +32,6 @@
 ##        (chapter headings, titles, footnotes, &c), and save pairs of files (.txt and .jnk) in the
 ##        $DestDir containing the relevant text.
 ##
-## NOTE
-##
-##      The idiom "--" at the end of a paragraph (any of multiple forms) is replaced with ":". This
-##        is the only actual change made to the text corpus.
-##
 ########################################################################################################################
 ##
 ##  MIT LICENSE
@@ -87,7 +82,7 @@ use Site::CommandLine;
 ########################################################################################################################
 
 my $BaseDir    = "$FindBin::Bin/..";
-my $DataDir    = "$BaseDir/TextFiles";
+my $DataDir    = "$BaseDir/ISOFiles";
 my $DestDir    = "$BaseDir/TextData";
 my $IgnoreFile = "$BaseDir/IgnoreList.txt";
 
@@ -154,13 +149,17 @@ foreach my $Line (@IgnoreLines) {
 
 StartTime();
 
+mkdir $DestDir
+    unless -d $DestDir;
+
 unlink <$DestDir/*>;
 
-chdir $DataDir;
-
-my @Files = shuffle <"$DataDir/*.txt">;
+my @Files    = shuffle <"$DataDir/*.txt">;
+my $NumFiles = @Files;
 
 my $SAVE_FAILURES = 0;
+
+print "Extracting narrative text from $NumFiles files\n\n";
 
 my $Saved     = 0;
 my $Processed = 0;
@@ -168,20 +167,23 @@ foreach my $File (@Files) {
 
     $Processed++;
 
+    print "\r$Processed/$NumFiles"
+        unless $Processed % 100;
+
     die "Unknown file ETextNo or extension"
         unless $File =~ m#.*/(\d+).txt#;
 
     my $ETextNo = $1;
 
     if( $IgnoreList->{$ETextNo} ) {
-        print "Ignoring $ETextNo\n";
+        print "Ignoring book: $ETextNo (from Ignore List)\n";
         next;
         }    
 
     ProcessText($File);
     }
 
-print "Done. $Processed files processed, $Saved texts saved.\n";
+print "\n\nDone. $Processed files processed, $Saved texts saved.\n";
 print "\n";
 
 exit(0);
@@ -199,7 +201,7 @@ exit(0);
 sub ProcessText {
     my $File = shift;
 
-#$File = "$DataDir/14729.txt";
+#$File = "$DataDir/18175.txt";
 
     $Keep = "";
     $Junk = "";
@@ -231,14 +233,6 @@ sub ProcessText {
 
         $Para =~ s/ \n/\n/g
             while $Para =~ m/ \n/g;
-
-        ################################################################################################################
-        #
-        # Convert Idiomatic "--" to plain ":"
-        #
-        $Para =~ s/:--$/:/g;
-        $Para =~ s/--$/:/g;
-        $Para =~ s/--"$/:"/g;
 
         ################################################################################################################
         #
@@ -279,6 +273,8 @@ sub ProcessText {
         #
         my $LastIndex = -1;
 
+        my $LastColon = $Para =~ m/:--$|--$|--"$/;
+
         while(1) {
 
             my $LastChar = substr($Para,$LastIndex,1);
@@ -296,8 +292,9 @@ sub ProcessText {
         if( $LastChar ne "." and
             $LastChar ne "!" and
             $LastChar ne "?" and
-            $LastChar ne ":" and
-            $LastChar ne "," ) {
+            $LastChar ne "," and 
+            $LastChar ne ":" and 
+            (not $LastColon) ) {
 
             JunkPara($Para,"No sentence end");
 

@@ -17,7 +17,6 @@
 ##  DATA
 ##
 ##      ->{DataDir}             Directory of mounted ISO
-##      ->{DestDir}             Directory for processed files
 ##
 ##      ->{Books}[]             List of Gutenberg Book objects from index file
 ##      ->{ETextToBook}         Map for ETextNo to book
@@ -137,7 +136,6 @@ sub new {
     my $proto = shift;
     my $class = ref($proto) || $proto;
     my $self  = bless { DataDir     => shift,
-                        DestDir     => shift,
                         Books       => [],
                         IndexSize   => 0,
                         NumBooks    => 0,
@@ -154,12 +152,6 @@ sub new {
 
     die "Library: DataDir $self->{DataDir} doesn't exist"
         unless -d $self->{DataDir};
-
-    die "Library: No DestDir supplied"
-        unless defined $self->{DestDir} and length $self->{DestDir};
-
-    die "Library: DestDir $self->{DestDir} doesn't exist"
-        unless -d $self->{DestDir};
 
     return $self;
     }
@@ -259,12 +251,12 @@ sub ScanBooks {
             if $ScanNum > 0 and $NumScanned >= $ScanNum;
 
         if( $PrintProgress > 1 ) {
-            print sprintf("%5d/%5d\n",$NumScanned,$self->{NumBooks})
+            print sprintf("\r%5d/%5d...",$NumScanned,$self->{NumBooks})
                 if ($NumScanned % $PrintProgress) == 0;
             }
         }
 
-    print sprintf("%5d\n\n",$NumScanned)
+    print sprintf("\r%5d/%5d\n\n",$NumScanned,$self->{NumBooks})
         if $PrintProgress;
     }
 
@@ -363,15 +355,21 @@ sub PrintLanguageSummary {
 
     my $NonEnglish = 0;
     $NonEnglish += $Langs{$_}
-        foreach grep { $_ ne "English" } keys %Langs;
+        foreach grep { $_ ne "English" and $_ ne "Olde English" } keys %Langs;
 
     print "Languages:\n";
-    print "    " . sprintf("%12s","English") . ": $Langs{English}\n";
-    print "     Non-English: $NonEnglish\n";
+    if( $Langs{OldeEnglish} ) {
+        print "     Modern English: " . sprintf("%5d",$Langs{English}    ) . "\n";
+        print "     Olde   English: " . sprintf("%5d",$Langs{OldeEnglish}) . "\n";
+        }
+    else {
+        print "     English       : " . sprintf("%5d",$Langs{English}    ) . "\n";
+        }
+    print     "     Non-English   : " . sprintf("%5d",$NonEnglish        ) . "\n";
     print "\n";
 
     print "    " . sprintf("%12s",$_ eq "" ? "(none)" : $_) . ": $Langs{$_}\n"
-        foreach sort { $Langs{$b} <=> $Langs{$a} } grep { $_ ne "English" } keys %Langs;
+        foreach sort { $Langs{$b} <=> $Langs{$a} } grep { $_ ne "English" and $_ ne "Olde English" } keys %Langs;
 
     print "\n";
     }

@@ -74,15 +74,15 @@ use Site::Time;
 ########################################################################################################################
 
 my $BaseDir = "$FindBin::Bin/..";
-my $DataDir = "$BaseDir/DiskData";
-my $DestDir = "$BaseDir/TextFiles";
-
-my $Library = Site::Library->new($DataDir,$DestDir);
-
-$| = 1;         # Flush output immediately
+my $DataDir = "$BaseDir/ISO";
+my $DestDir = "$BaseDir/ISOFiles";
 
 die "ISO not mounted at $DataDir"
     unless -r "$DataDir/LICENSE.TXT";
+
+my $Library = Site::Library->new($DataDir);
+
+$| = 1;         # Flush output immediately
 
 ########################################################################################################################
 ########################################################################################################################
@@ -92,6 +92,7 @@ die "ISO not mounted at $DataDir"
 ########################################################################################################################
 ########################################################################################################################
 
+unlink "$BaseDir/Library.JSON";
 $Library->ParseIndex();         # No arg: uses default index file from ISO
 
 print "\n";
@@ -107,13 +108,13 @@ my $NumScan = $Library->{NumBooks};
 
 StartTime();
 print "\n";
-print "Scanning $NumScan books for encodings and size:\n";
+print "Scanning $NumScan books for encodings, language, and defects:\n";
 $Library->ScanBooks($NumScan,0,100);
 $Library->Save("$BaseDir/Library.JSON");
 
 print "Scanned $NumScan books:\n";
-print "    Total Size:   " .          AsMB($Library->{TotalBytes}) . "\n";
-print "    Encodings:    " . (scalar keys %{$Library->{TotalEncs}})  . "\n";
+print "    Total Size:   " .           AsMB($Library->{TotalBytes})  . "\n";
+print "    Encodings:    " . (scalar keys %{$Library->{TotalEncs }}) . "\n";
 print "    Elapsed time: " . ElapsedTime() . "\n";
 print "\n";
 
@@ -134,6 +135,9 @@ print "\n";
 
 # $Library->PrintDefectiveBooks();
 # print "\n";
+
+print "" . ($Library->{NumBooks}-$Library->{NumUnfit}) . " books available for narrative text processing.\n";
+print "\n";
 
 exit(0);
 
