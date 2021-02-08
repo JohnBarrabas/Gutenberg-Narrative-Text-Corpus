@@ -29,7 +29,6 @@
 ##              {Encoding}                  Purported Encoding (from file text)
 ##              {Size}                      Size of file (bytes, after unzip)
 ##
-##      ->{DivText}                 Full text of <div> from which book info was taken
 ##      ->{Unfit}                   Msg describing why book can't be used (ex: "Language not English")
 ##      ->{Tag}                     Tag that describes book in some way
 ##
@@ -172,7 +171,6 @@ sub new {
                        Author  => $Author ,
                        Lang    => $Lang   ,
                        Files   => {},
-                       DivText => $DivText,
                        Unfit   => "",
                        Tag     => "",
                        Text    => "",
@@ -519,8 +517,8 @@ sub PrintHeader {
     my $self = shift;
 
     PrintDesc ($self);
-    PrintFiles($self);
     PrintUnfit($self);
+    PrintFiles($self);
     }
 
 
@@ -557,7 +555,7 @@ sub PrintFiles {
 
     print "Files:\n";
     print "    $_\n"
-        foreach sort @{$self->{Files}};
+        foreach sort keys %{$self->{Files}};        # Keys are full paths
     }
 
 
@@ -573,14 +571,7 @@ sub PrintFiles {
 sub PrintUnfit {
     my $self = shift;
 
-    if( $self->{Unfit} eq "" ) {
-        print "Unfit: Not.\n";
-        return;
-        }
-
-    print "****$self->{Unfit}: \n";
-    print "    $_\n"
-        foreach split /<br \/>/,$self->{DivText};
+    print "Unfit:   $self->{Unfit}\n";
     }
 
 

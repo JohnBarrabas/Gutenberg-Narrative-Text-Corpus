@@ -61,7 +61,7 @@ installs Perl by default.
 The author has no access to a windows machine, but perl is the most portable language
 so the text extraction sections of the project should run on any installed perl system
 such as Strawberry Perl. The process is modular, so you can download the ISO separately
-using Windows utilities and continue with the perl sections.
+using Windows utilities and continue with the extraction sections using perl.
 
 The maximum extraction process (extract and save all text from all files) requires about
 13GB of free disk space. About 3.4GB of the maximum output is the narrative text,
@@ -90,10 +90,10 @@ found there in order:
 > ./06-ExtractText.pl         # Separate narrative text, save as separate files
 ````
 
-Once all scripts have run, the subdirectory "Gutenberg-Narrative-Text-Corpus/TextData"
+Once all scripts have run, the subdirectory "../TextData"
 will contain a list of extracted narrative text files.
 
-Additionally, the process will generate "Gutenberg-Narrative-Text-Corpus/Library.JSON",
+Additionally, the process will generate "../Library.JSON",
 a database of the Gutenberg book information: title, author, encoding, language,
 and so on.
 
@@ -111,7 +111,7 @@ For example:
 >
 ````
 
-The file "11721.txt" contains extracted narrative text from the book with ETextNo: 11721 by Gutenberg's
+The file "11721.txt" contains extracted narrative text from book 11721 in Gutenberg's
 internal numbering scheme.
 
 Opening Library.JSON in a text editor, we see that the book with ETextNo: 11721 is:

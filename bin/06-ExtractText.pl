@@ -68,8 +68,6 @@ use FindBin;
 
 use lib "$FindBin::Bin/../lib";
 
-use Site::Library;
-use Site::Book;
 use Site::Time;
 use Site::CommandLine;
 
@@ -90,8 +88,6 @@ my $UC_LIMIT = 0.2;                 # Portion of uppercase chars in string, abov
 
 my $Keep;
 my $Junk;
-
-my $Library = Site::Library->new($DataDir,$DestDir);
 
 $| = 1;                             # Flush output immediately
 

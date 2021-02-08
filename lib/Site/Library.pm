@@ -36,7 +36,7 @@
 ##
 ##  FUNCTIONS
 ##
-##      ->new($DataDir,$DstDir)     Make a new library object from files in $BaseDir
+##      ->new($DataDir)             Make a new library object from files in $BaseDir
 ##
 ##      ->ParseIndex($IndexFile)    Read the index file and build the book list
 ##
@@ -135,7 +135,7 @@ $| = 1;         # Flush output immediately
 sub new {
     my $proto = shift;
     my $class = ref($proto) || $proto;
-    my $self  = bless { DataDir     => shift,
+    my $self  = bless { DataDir     => shift // "",
                         Books       => [],
                         IndexSize   => 0,
                         NumBooks    => 0,
@@ -146,12 +146,6 @@ sub new {
                         TotalEncs   => {},
                         ETextToBook => {},
         }, $class;
-
-    die "Library: No DataDir supplied"
-        unless defined $self->{DataDir} and length $self->{DataDir};
-
-    die "Library: DataDir $self->{DataDir} doesn't exist"
-        unless -d $self->{DataDir};
 
     return $self;
     }
@@ -168,6 +162,13 @@ sub new {
 #
 sub ParseIndex {
     my $self = shift;
+
+    die "Library: No DataDir supplied"
+        unless defined $self->{DataDir} and length $self->{DataDir};
+
+    die "Library: DataDir $self->{DataDir} doesn't exist"
+        unless -d $self->{DataDir};
+
     $self->{IndexFile} = shift // "$self->{DataDir}/$DefaultIndexFile";
 
     my $IndexData = eval{read_file($self->{IndexFile})}     # Catches/avoids Croak() in lib function
@@ -192,6 +193,7 @@ sub ParseIndex {
 
     foreach my $Entry (@Entries) {
         my $Book = Site::Book->new($Entry,$self->{DataDir});
+        $self->{ETextToBook}{$Book->{ETextNo}} = scalar @{$self->{Books}};
         push @{$self->{Books}},$Book;
 
         $self->{NumBooks}++;

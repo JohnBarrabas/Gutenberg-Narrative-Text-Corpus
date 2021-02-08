@@ -1,23 +1,28 @@
-#!/bin/bash
+#!/usr/bin/perl -I../lib
 #
 ########################################################################################################################
 ########################################################################################################################
 ##
-##      Copyright (C) 2021 Rajstennaj Barrabas, Milford, NH 03055
+##      Copyright (C) 2010 Rajstennaj Barrabas, Milford, NH 03055
 ##      All Rights Reserved under the MIT license as outlined below.
 ##
 ##  FILE
-##      09-MakeISO.sh
+##      BookInfo.pl
 ##
 ##  DESCRIPTION
-##      Create an ISO containing the library database and all the generated text files.
+##      Load the library listing and print out the info for a specific book.
 ##
 ##  USAGE
-##      09-MakeISO.sh
+##      BookInfo.pl BookNo [BookNo ...]
 ##
-##  NOTE: This step is optional.
+##      Print the library entry for one (or more) books.
 ##
-########################################################################################################################
+##      BookNo      EText book number of book to print
+##
+##  EXAMPLE
+##
+##      BookInfo.pl 1400
+##
 ########################################################################################################################
 ##
 ##  MIT LICENSE
@@ -42,27 +47,63 @@
 ########################################################################################################################
 ########################################################################################################################
 
-CDLABEL="NarrativeText"
-ISONAME="NarrativeText.iso"
-TMPDIR="/tmp/ISO"
+use strict;
+use warnings;
+use Carp;
 
-cd ..
+our $VERSION = '1.0';
+
+use FindBin;
+use List::Util qw(shuffle);
+
+use lib "$FindBin::Bin/../lib";
+
+use Site::Library;
+use Site::Book;
+use Site::CommandLine;
 
 ########################################################################################################################
 ########################################################################################################################
-#
-# The mkisofs program automatically enters directories, so we need to forcefully create the directory
-#   structure we want it to use.
-#
-echo    "============================================"
-echo -n "Generating ISO from narrative text files... ";
+##
+## Data declarations
+##
+########################################################################################################################
+########################################################################################################################
 
-mkdir -p "$TMPDIR";
-rm -rf "$TMPDIR/*"
+my $BaseDir = "$FindBin::Bin/..";
 
-cp Library.JSON $TMPDIR
-cp -rf TextData $TMPDIR/
+my $Library = Site::Library->new();
 
-mkisofs -o "$ISONAME" -A "$CDLABEL" -V "$CDLABEL" -iso-level 4 -relaxed-filenames -U -relaxed-filenames "$TMPDIR"
+$| = 1;         # Flush output immediately
 
-rm -rf $TMPDIR
+########################################################################################################################
+########################################################################################################################
+##
+## Find the Gutenberg index file and parse it
+##
+########################################################################################################################
+########################################################################################################################
+
+my $LibraryFile = "$BaseDir/Library.JSON";
+
+exit HELP_MESSAGE()
+    unless @ARGV;
+
+print "\n";
+print "Loading library: $LibraryFile\n";
+
+$Library->Load($LibraryFile);
+
+while(my $ETextNo = shift) {
+
+    my $Book = $Library->{Books}[$Library->{ETextToBook}{$ETextNo}];
+
+    die "No book with ETextNo $ETextNo in Library"
+        unless defined $Book;
+
+    print "\n";
+    $Book->PrintHeader();
+    print "\n";
+    }
+
+exit(0);
