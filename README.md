@@ -50,29 +50,29 @@ PREFACES AND PROLOGUES TO FAMOUS BOOKS
 =====No sentence start
 "/Si/," said the Italian, discreetly.
 ````
-The system is modular and commented, feel free to modify the extraction scripts
+The system is modular and commented, feel free to modify the scripts
 or add your own as needed.
 
 ## System requirements
 
 The project requires bash and perl, and so should run on any linux system. Linux
-installs Perl by default.
+installs perl by default.
 
 The author has no access to a windows machine, but perl is the most portable language
 so the text extraction sections of the project should run on any installed perl system
 such as Strawberry Perl. The process is modular, so you can download the ISO separately
-using Windows utilities and continue with the extraction sections using perl.
+using Windows utilities and continue the extraction sections using perl.
 
 The maximum extraction process (extract and save all text from all files) requires about
 13GB of free disk space. About 3.4GB of the maximum output is the narrative text,
-the rest being temporary files (and similar) that can be discarded once the
-narrative text files are complete.
+the remainder being temporary files (and similar) that can be discarded once the
+process is complete.
 
 Optionally, less than the maximum can be extracted.
 
 ## Installation overview
 
-The file [INSTALL.md](file:INSTALL.md) describes the install process in detail.
+The files "*INSTALL.md" in the project directory describe the install process in detail.
 
 ### General instructions:
 
@@ -90,15 +90,13 @@ found there in order:
 > ./06-ExtractText.pl         # Separate narrative text, save as separate files
 ````
 
-Once all scripts have run, the subdirectory "../TextData"
-will contain a list of extracted narrative text files.
+Once all scripts have run, the directory "TextData" in the top-level project directory
+will contain the extracted narrative text files.
 
-Additionally, the process will generate "../Library.JSON",
-a database of the Gutenberg book information: title, author, encoding, language,
-and so on.
-
-The Library.JSON file may be loaded by your program (perl, javascript, or python) to
-facilitate further processing.
+Additionally, the process will generate a library catalog file "Library.JSON" in the
+top-level project directory containing book information: title, author, encoding,
+language, and so on. The catalog file is JSON encoded, and may be easily loaded by
+a program you write (perl, javascript, or python) to facilitate further processing.
 
 For example:
 

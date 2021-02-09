@@ -63,12 +63,12 @@ use Carp;
 our $VERSION = '1.0';
 
 use File::Slurp qw(read_file write_file);
-use List::Util  qw(shuffle);
 use FindBin;
 
 use lib "$FindBin::Bin/../lib";
 
 use Site::Time;
+use Site::Library;
 use Site::CommandLine;
 
 ########################################################################################################################
@@ -84,7 +84,9 @@ my $DataDir    = "$BaseDir/ISOFiles";
 my $DestDir    = "$BaseDir/TextData";
 my $IgnoreFile = "$BaseDir/IgnoreList.txt";
 
-my $UC_LIMIT = 0.2;                 # Portion of uppercase chars in string, above which is not narrative
+my $UC_LIMIT       = 0.2;           # Portion of uppercase chars in string, above which is not narrative
+my $KEEP_MIN_LINES = 100;           # Minimum #  of narrative lines         needed to keep text
+my $KEEP_MIN_PROP  = 0.2;           # Proportion of narrative lines to junk needed to keep text
 
 my $Keep;
 my $Junk;
@@ -92,6 +94,9 @@ my $Junk;
 $| = 1;                             # Flush output immediately
 
 my $IgnoreList;
+
+my $Library = Site::Library->new($DataDir);
+my $LibraryFile = "$BaseDir/Library.JSON";
 
 my $KeepJunk  = 0;
 my $PrintJunk = 0;
@@ -150,10 +155,15 @@ mkdir $DestDir
 
 unlink <$DestDir/*>;
 
-my @Files    = shuffle <"$DataDir/*.txt">;
+my @Files    = <"$DataDir/*.txt">;
 my $NumFiles = @Files;
 
 my $SAVE_FAILURES = 0;
+
+print "\n";
+print "Loading library: $LibraryFile\n";
+
+$Library->Load($LibraryFile);
 
 print "Extracting narrative text from $NumFiles files\n\n";
 
@@ -171,15 +181,67 @@ foreach my $File (@Files) {
 
     my $ETextNo = $1;
 
+    #
+    # Grab the catalog book entry, in case we need to defect it.
+    #
+    my $Book = $Library->{Books}[$Library->{ETextToBook}{$ETextNo}];
+
+    die "No book with ETextNo $ETextNo in Library"
+        unless defined $Book;
+
+    #
+    # See if this specific book is in the IgnoreList
+    #
     if( $IgnoreList->{$ETextNo} ) {
         print "Ignoring book: $ETextNo (from Ignore List)\n";
         next;
         }    
 
-    ProcessText($File);
+#    print "Processing Book/File: $File\n";
+
+    my $Text = eval{read_file($File)};              # Catches/avoids Croak() in lib function
+
+    die "Cannot read file $File ($!)"
+        unless $Text;
+
+    ProcessText($Text);
+
+    #
+    # Discard files for which the majority of text is junk.
+    #
+    my $KeepLines = () = ($Keep =~ /\n/g);      # Count total kept lines
+    
+    if( $KeepLines < $KEEP_MIN_LINES ) {
+        $Book->{Unfit} = "Fewer than $KEEP_MIN_LINES narrative lines generated.";
+        next;
+        }
+
+    if( length($Keep) < $KEEP_MIN_PROP*length($Text) ) {
+        $Book->{Unfit} = "Less than $KEEP_MIN_PROP of text is narrative.";
+        next;
+        }
+
+    my $NewFile = $File;
+    $NewFile =~ s/$DataDir/$DestDir/;
+
+    eval{write_file($NewFile,$Keep)};                   # Catches/avoids Croak() in lib function
+
+    $Saved++;
+
+    if( $KeepJunk ) {
+        my $JunkFile =~ s/txt$/jnk/;
+        $Junk = ">>>>>Processing file: $File\n\n" . $Junk;
+        eval{write_file($JunkFile,$Junk)};              # Catches/avoids Croak() in lib function
+        }
+
     }
 
+$Library->Save($LibraryFile);
+
 print "\n\nDone. $Processed files processed, $Saved texts saved.\n";
+print "\n";
+
+$Library->PrintUnfitSummary ();
 print "\n";
 
 exit(0);
@@ -190,26 +252,16 @@ exit(0);
 #
 # ProcessText - Process text for this step
 #
-# Inputs:   File to process
+# Inputs:   Text to process
 #
-# Outputs:  None.
+# Outputs:  $Keep contains paragraphs of narrative text found in book 
+#           $Junk contains discarded text
 #
 sub ProcessText {
-    my $File = shift;
-
-#$File = "$DataDir/18175.txt";
+    my $Text = shift;
 
     $Keep = "";
     $Junk = "";
-    my $Text = eval{read_file($File)};              # Catches/avoids Croak() in lib function
-
-    unless( $Text ) {
-        print "Cannot read file $File ($!)";
-        return 0;
-        }
-
-#    print "Processing Book/File: $File\n";
-
     my @Paras = split /\n\n/,$Text;
 
     foreach my $Para (@Paras) {
@@ -242,6 +294,15 @@ sub ProcessText {
         #
         next
             unless length($Para);
+
+        ################################################################################################################
+        #
+        # Paragraphs with stretches of whitspace between text are probably tabular
+        #
+        if( $Para =~ m/\s{3,}/ ) {          # Match 3 or more consecutive whitespace
+            JunkPara($Para,"Whitespace in text");
+            next;
+            }
 
         ################################################################################################################
         #
@@ -365,23 +426,6 @@ sub ProcessText {
             }
 
         JunkPara($Para,"No sentence start");
-        }
-
-    my $NewFile = $File;
-    $NewFile =~ s/$DataDir/$DestDir/;
-
-#     if( length($Keep) < length($Junk) ) {
-#         print "==== $NewFile: More junk than keep\n";
-#         }
-
-    eval{write_file($NewFile,$Keep)};                   # Catches/avoids Croak() in lib function
-
-    $Saved++;
-
-    if( $KeepJunk ) {
-        $NewFile =~ s/txt$/jnk/;
-        $Junk = ">>>>>Processing file: $File\n\n" . $Junk;
-        eval{write_file($NewFile,$Junk)};               # Catches/avoids Croak() in lib function
         }
     }
 

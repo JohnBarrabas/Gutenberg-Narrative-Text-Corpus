@@ -7,3 +7,5 @@
 #
 12864               # Dictionary
 14358               # Mostly riddles
+11149               # Prayerbook
+15937               # Scraps of text from diary

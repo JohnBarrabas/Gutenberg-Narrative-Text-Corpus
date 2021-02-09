@@ -202,11 +202,12 @@ foreach my $Book (shuffle @{$Library->{Books}}) {
         if $Saved >= $MaxSave;
     }
 
+$Library->Save($LibraryFile);
+
 print " Done. $Processed files processed, $Saved texts saved.\n";
 print "\n";
 
 $Library->PrintUnfitSummary ();
 print "\n";
-
 
 exit(0);
